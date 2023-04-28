@@ -1,0 +1,106 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"math"
+	"os"
+	"strconv"
+	"strings"
+
+	"github.com/skratchdot/open-golang/open"
+	"github.com/wcharczuk/go-chart"
+)
+
+func main() {
+	// Define flags
+	name := flag.String("name", "World", "a string")
+	age := flag.Int("age", 0, "an int")
+	married := flag.Bool("married", false, "a bool")
+	nums := flag.String("nums", "", "comma-separated list of integers")
+
+	// Parse the flags
+	flag.Parse()
+
+	// Print the values of the flags
+	fmt.Printf("Hello %s!\n", *name)
+	fmt.Printf("You are %d years old.\n", *age)
+
+	if *married {
+		fmt.Println("You are married.")
+	} else {
+		fmt.Println("You are not married.")
+	}
+
+	// Perform data analysis
+	if *nums != "" {
+		// Parse the comma-separated list of integers
+		var values []float64
+		for _, numStr := range strings.Split(*nums, ",") {
+			num, err := strconv.Atoi(numStr)
+			if err != nil {
+				fmt.Println("Invalid input:", err)
+				os.Exit(1)
+			}
+			values = append(values, float64(num))
+		}
+
+		// Calculate statistics
+		sum := 0.0
+		min := values[0]
+		max := values[0]
+		for _, value := range values {
+			sum += value
+			if value < min {
+				min = value
+			}
+			if value > max {
+				max = value
+			}
+		}
+		count := float64(len(values))
+		avg := sum / count
+
+		// Perform complex calculations
+		var result float64
+		for _, value := range values {
+			result += (value - avg) * (value - avg)
+		}
+		stdev := math.Sqrt(result / count)
+
+		// Create a bar chart
+		chartTitle := fmt.Sprintf("Data Analysis Results (%d values)", len(values))
+		chartData := []chart.Value{
+			{Label: "Min", Value: min},
+			{Label: "Max", Value: max},
+			{Label: "Average", Value: avg},
+			{Label: "Standard Deviation", Value: stdev},
+		}
+		graph := chart.BarChart{
+			Title: chartTitle,
+			Bars:  chartData,
+		}
+		chart := chart.Chart{
+			Series: []chart.Series{graph},
+		}
+
+		// Save the chart to a PNG file
+		chartFilename := "chart.png"
+		chartFile, err := os.Create(chartFilename)
+		if err != nil {
+			fmt.Println("Error creating chart file:", err)
+			os.Exit(1)
+		}
+		defer chartFile.Close()
+		err = chart.Render(chart.PNG, chartFile)
+		if err != nil {
+			fmt.Println("Error rendering chart:", err)
+			os.Exit(1)
+		}
+
+		// Open the chart file in the default viewer
+		open.Run(chartFilename)
+	}
+
+	os.Exit(0)
+}
